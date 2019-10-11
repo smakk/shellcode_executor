@@ -1,0 +1,2 @@
+# shellcode_executor
+生成一个文件名为out的可执行文件，里面包含一个名为shellcode的函数，通过main函数调用shellcode
